@@ -224,3 +224,179 @@ self.save_raw_data(data)
 * salvar arquivos em formato Parquet
 * iniciar modelagem das tabelas no PostgreSQL
 * preparar integração com Airflow DAG
+
+<br>
+
+<h1>Dia 03:</h1> 
+<strong>feat:</strong>
+
+<br>
+
+* padronizar schema
+* corrigir tipos
+* remover inconsistências
+* validar nulos
+* persistir em formato analítico
+
+<br>
+
+# Documentação Técnica: Camada Trusted
+
+Nesta etapa foi implementada a primeira versão da **Trusted Layer** do Data Lakehouse.
+
+## Objetivo
+
+A camada Trusted é responsável por transformar os dados brutos (Raw) em dados padronizados e confiáveis para as próximas etapas do pipeline.
+
+## Fluxo
+
+CoinGecko API
+
+↓
+
+Raw Layer (JSON)
+
+↓
+
+Trusted Transformer
+
+↓
+
+Seleção de colunas
+
+↓
+
+Padronização dos tipos de dados
+
+↓
+
+Remoção de registros nulos
+
+↓
+
+Persistência em Parquet
+
+## O que foi implementado
+
+- Leitura automática do arquivo JSON mais recente da camada Raw.
+- Seleção apenas das colunas relevantes para análise.
+- Conversão dos tipos de dados utilizando Polars.
+- Remoção de registros contendo valores nulos.
+- Persistência dos dados na camada Trusted em formato **Parquet**.
+
+## Resultado
+
+Arquivo gerado em:
+
+`data/trusted/market/market_trusted.parquet`
+
+## Observação
+
+Para executar o módulo foi utilizado:
+
+```bash
+python -m src.transform.trusted_transform
+```
+
+A execução como módulo garante que o pacote `src` seja reconhecido corretamente pelo Python.
+
+<br>
+
+No arquivo:
+
+```bash
+db\init.sql
+```
+
+Ao invés de FLOAT, usei:
+
+**NUMERIC(20,8)**
+
+Porque valores financeiros exigem precisão. Isso evita problemas de arredondamento.
+
+**BIGSERIAL**
+
+Na tabela de snapshots. Porque ela vai crescer bastante.Cada execução do pipeline gera novos registros.
+
+**SERIAL**
+
+Na tabela de assets. Ela praticamente não cresce.
+
+**Hoje temos:**
+
+- Bitcoin
+- Ethereum
+- Solana
+- XRP
+- Cardano
+
+# Documentação Técnica: PostgreSQL Loader (Etapa 1)
+
+Nesta etapa foi criada a infraestrutura inicial da camada **Load** do pipeline ETL.
+
+## Objetivo
+
+Preparar o projeto para carregar os dados da camada Trusted para o PostgreSQL.
+
+Nesta primeira versão, o foco não foi inserir dados no banco, mas validar toda a infraestrutura necessária para essa operação.
+
+## Fluxo
+
+Trusted Layer (Parquet)
+
+↓
+
+PostgresLoader
+
+↓
+
+Conexão com PostgreSQL
+
+↓
+
+Leitura do arquivo Parquet
+
+↓
+
+Validação da infraestrutura
+
+↓
+
+Encerramento da conexão
+
+## O que foi implementado
+
+- Criação da classe `PostgresLoader`.
+- Configuração da conexão utilizando `psycopg`.
+- Leitura do arquivo `market_trusted.parquet` utilizando Polars.
+- Centralização do logging através do `logger.py`.
+- Encerramento seguro da conexão com o banco de dados.
+
+## Arquitetura
+
+O módulo foi dividido em pequenas responsabilidades, facilitando manutenção e testes.
+
+- `connect()` → estabelece conexão com o PostgreSQL.
+- `read_trusted_data()` → lê os dados da camada Trusted.
+- `close_connection()` → encerra a conexão.
+- `run()` → orquestra toda a execução do loader.
+
+## Resultado
+
+Ao final desta etapa, o pipeline já consegue:
+
+- conectar ao PostgreSQL;
+- ler corretamente o arquivo Parquet da camada Trusted;
+- validar que toda a infraestrutura da camada Load está operacional.
+
+A inserção dos dados nas tabelas será implementada na próxima etapa.
+
+<h1>Dificuldades</h1>
+
+Até o momento, nenhuma dificuldade técnica relevante foi encontrada nesta etapa. Todos os componentes da camada Trusted e da infraestrutura inicial da camada Load foram implementados e validados com sucesso.
+
+<br>
+
+<h1>Próximos passos:</h1>
+
+Implementar a 2 etapa do PostgreSQL Loader.

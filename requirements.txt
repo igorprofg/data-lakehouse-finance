@@ -2,8 +2,8 @@ apache-airflow
 requests
 polars
 pyarrow
-psycopg2-binary
 python-dotenv
 pydantic
 dbt-postgres
 sqlalchemy
+psycopg[binary]
