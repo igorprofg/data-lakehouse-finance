@@ -400,3 +400,135 @@ Até o momento, nenhuma dificuldade técnica relevante foi encontrada nesta etap
 <h1>Próximos passos:</h1>
 
 Implementar a 2 etapa do PostgreSQL Loader.
+
+<br>
+
+# Dia 04:
+
+<strong>feat: implementação da carga inicial de ativos no PostgreSQL</strong>
+
+<br>
+
+## Objetivo
+
+Implementar a **Etapa 2 do PostgreSQL Loader**, realizando a primeira carga efetiva de dados da camada **Trusted** para o banco PostgreSQL.
+
+Nesta etapa foi utilizada a tabela `assets`, responsável por armazenar as informações básicas das criptomoedas.
+
+<br>
+
+## Fluxo
+
+Trusted Layer (Parquet)
+
+↓
+
+PostgresLoader
+
+↓
+
+Leitura dos dados com Polars
+
+↓
+
+Conexão com PostgreSQL
+
+↓
+
+Carga da tabela `assets`
+
+↓
+
+Validação dos registros
+
+<br>
+
+## O que foi implementado
+
+* Implementação da função `load_assets()`.
+* Leitura das colunas `id`, `symbol` e `name` da camada Trusted.
+* Inserção dos ativos na tabela `assets`.
+* Utilização de `ON CONFLICT` para evitar duplicidade de ativos.
+* Captura do `asset_id` gerado pelo PostgreSQL.
+* Implementação de tratamento de exceções com `rollback`.
+* Validação da carga diretamente no PostgreSQL.
+
+A tabela `assets` foi populada com os dados obtidos da camada Trusted:
+
+* Bitcoin
+* Ethereum
+* Solana
+* Cardano
+
+<br>
+
+## Resultado
+
+Foram carregados **4 registros** na tabela `assets`.
+
+Consulta utilizada para validação:
+
+```sql
+SELECT *
+FROM public.assets;
+```
+
+Resultado:
+
+```text
+1 | bitcoin  | btc | Bitcoin
+2 | ethereum | eth | Ethereum
+3 | solana   | sol | Solana
+4 | cardano  | ada | Cardano
+```
+
+<br>
+
+## Dificuldades
+
+Durante a implementação foi identificado que existiam **duas instâncias do PostgreSQL** na máquina:
+
+* PostgreSQL instalado diretamente no Windows;
+* PostgreSQL executado através do Docker.
+
+Ambas utilizavam a porta `5432`, fazendo com que o `PostgresLoader` se conectasse inicialmente à instância do Windows em vez da instância containerizada onde as tabelas haviam sido criadas.
+
+A situação foi identificada através da verificação do `data_directory` do PostgreSQL.
+
+### Solução
+
+A porta externa do PostgreSQL containerizado foi alterada para `5433`, mantendo a porta interna `5432`.
+
+```text
+127.0.0.1:5433
+        ↓
+Docker PostgreSQL:5432
+```
+
+Com isso, o `PostgresLoader` passou a acessar corretamente o PostgreSQL do Docker.
+
+<br>
+
+## Observação
+
+O `PostgresLoader` foi executado através de:
+
+```bash
+python -m src.load.postgres_loader
+```
+
+A execução foi concluída com sucesso e confirmou:
+
+```text
+4 assets loaded successfully.
+```
+
+<br>
+
+# Próximos passos:
+
+* Implementar a **Etapa 3 do PostgreSQL Loader**.
+* Carregar os dados de mercado na tabela `market_snapshots`.
+* Relacionar cada registro ao respectivo `asset_id`.
+* Validar os registros inseridos no PostgreSQL.
+

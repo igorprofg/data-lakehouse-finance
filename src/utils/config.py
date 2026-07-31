@@ -14,6 +14,7 @@ class Config:
     POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
     POSTGRES_HOST = os.getenv("POSTGRES_HOST")
     POSTGRES_PORT = os.getenv("POSTGRES_PORT")
+    POSTGRES_LOCAL_PORT = os.getenv("POSTGRES_LOCAL_PORT")
 
     # Data Lake
     RAW_DATA_PATH = "data/raw/coingecko"
