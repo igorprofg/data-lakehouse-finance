@@ -128,6 +128,76 @@ class PostgresLoader:
 
         return asset_ids
 
+    def load_market_snapshots(self, df):
+        self.logger.info(
+            "Starting market snapshots loading..."
+        )
+
+        try:
+            with self.connection.cursor() as cursor:
+
+                snapshots_loaded = 0
+
+                for row in df.iter_rows(named=True):
+
+                    cursor.execute(
+                        """
+                        SELECT asset_id
+                        FROM assets
+                        WHERE coingecko_id = %s
+                        """,
+                        (row["id"],)
+                    )
+
+                    result = cursor.fetchone()
+
+                    if result is None:
+                        self.logger.warning(
+                            f"Asset not found: {row['id']}"
+                        )
+                        continue
+
+                    asset_id = result[0]
+
+                    cursor.execute(
+                        """
+                        INSERT INTO market_snapshots (
+                            asset_id,
+                            current_price,
+                            market_cap,
+                            total_volume,
+                            price_change_percentage_24h,
+                            market_last_updated
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        """,
+                        (
+                            asset_id,
+                            row["current_price"],
+                            row["market_cap"],
+                            row["total_volume"],
+                            row["price_change_percentage_24h"],
+                            row["last_updated"]
+                        )
+                    )
+
+                    snapshots_loaded += 1
+
+                self.connection.commit()
+
+                self.logger.info(
+                    f"{snapshots_loaded} market snapshots loaded successfully."
+                )
+
+        except Exception:
+            self.connection.rollback()
+
+            self.logger.exception(
+                "An error occurred during market snapshots loading."
+            )
+
+            raise
+
     def close_connection(self):
         if self.connection:
             self.connection.close()
@@ -146,12 +216,18 @@ class PostgresLoader:
                 "Assets loading completed successfully."
             )
 
+            self.load_market_snapshots(df)
+
+            self.logger.info(
+                "Market snapshots loading completed successfully."
+            )
+
         except Exception:
             if self.connection:
                 self.connection.rollback()
 
             self.logger.exception(
-                "An error occurred during assets loading."
+                "An error occurred during PostgreSQL loading."
             )
 
             raise

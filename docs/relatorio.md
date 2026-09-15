@@ -532,3 +532,92 @@ A execução foi concluída com sucesso e confirmou:
 * Relacionar cada registro ao respectivo `asset_id`.
 * Validar os registros inseridos no PostgreSQL.
 
+<br>
+
+# Dia 05:
+
+<strong>feat: implementação da etapa 3 do loader</strong>
+
+<br>
+
+## Objetivo
+
+Implementar a 3ª etapa do arquivo `postgres_loader.py`, realizando a carga dos dados de mercado na tabela `market_snapshots` e relacionando cada registro ao respectivo `asset_id` previamente cadastrado na tabela `assets`.
+
+<br>
+
+## Fluxo
+
+<br>
+
+1. Estabelecer conexão com o banco de dados PostgreSQL executado em um container Docker.
+2. Ler o arquivo `market_trusted.parquet` da Trusted Layer.
+3. Garantir que os ativos estejam cadastrados na tabela `assets`.
+4. Buscar o `asset_id` correspondente a cada ativo utilizando o campo `coingecko_id`.
+5. Inserir os dados de mercado na tabela `market_snapshots`.
+6. Confirmar a transação no banco de dados.
+7. Validar os registros inseridos por meio de consultas SQL no PostgreSQL.
+8. Encerrar a conexão com o banco de dados.
+
+<br>
+
+## O que foi implementado
+
+Foi implementado o método `load_market_snapshots()` no arquivo `src/load/postgres_loader.py`.
+
+Esse método percorre os registros da Trusted Layer, consulta o `asset_id` correspondente na tabela `assets` e insere os dados de mercado na tabela `market_snapshots`.
+
+Os campos carregados foram:
+
+- `asset_id`;
+- `current_price`;
+- `market_cap`;
+- `total_volume`;
+- `price_change_percentage_24h`;
+- `market_last_updated`.
+
+A operação utiliza uma transação única, realizando `commit` após a inserção dos registros. Em caso de erro, é executado `rollback` para evitar a persistência de dados incompletos.
+
+O método também foi integrado ao fluxo principal do loader, sendo executado após o carregamento dos ativos.
+
+<br>
+
+## Resultado
+
+A execução do comando:
+
+```bash
+python -m src.load.postgres_loader
+```
+
+foi concluída com sucesso.
+
+O loader conseguiu:
+
+Estabelecer conexão com o PostgreSQL;
+
+Ler 4 registros da Trusted Layer;
+
+Carregar 4 ativos na tabela assets;
+
+Carregar 4 registros na tabela market_snapshots;
+
+Relacionar cada snapshot ao respectivo asset_id;
+
+Encerrar a conexão corretamente.
+
+A validação foi realizada com a consulta:
+
+SELECT *
+FROM public.market_snapshots;
+
+A consulta retornou os 4 registros inseridos, confirmando que os dados de mercado foram persistidos corretamente no banco de dados.
+
+# Próximos passos:
+
+- Implementar e documentar a camada Refined, preparando os dados para análises e consultas mais elaboradas.
+- Criar transformações analíticas utilizando os dados disponíveis na Trusted Layer.
+- Avaliar a criação de tabelas dimensionais e fatos para organizar os dados em um modelo analítico.
+- Integrar as etapas de extração, transformação e carga ao Apache Airflow.
+- Automatizar a execução periódica do pipeline.
+- Validar a consistência dos dados entre as camadas Raw, Trusted, Refined e PostgreSQL.
